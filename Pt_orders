@@ -1,0 +1,59 @@
+DECLARE 
+   @StartDate  DATETIME
+  ,@EndDate DATETIME
+
+
+SET @StartDate = '2019-04-01' --EPIC_UTIL.EFN_DIN('t-1') 
+SET @EndDate   =  dateadd(day,1,EPIC_UTIL.EFN_DIN('t-1'))
+
+select  cast(ORDERING_DATE as date) as Order_Date
+, PROC_NAME
+, count(order_proc_id) as Total_Orders
+
+
+from
+(
+
+		select pat.PAT_MRN_ID
+		, op.ORDERING_DATE
+		, op.ORDER_INST
+		, op.ORDER_PROC_ID
+		, zot.NAME as ORDER_TYPE
+		, zos.NAME as ORDER_STAT
+		, zfc.NAME as CXL_RSN
+		, eap.PROC_CODE 
+		, eap.PROC_NAME
+		, ser.PROV_NAME as AUTH_PROV
+
+
+
+		from Order_proc op
+		left join PATIENT pat on op.PAT_ID = pat.PAT_ID
+		left join CLARITY_SER ser on op.AUTHRZING_PROV_ID = ser.PROV_ID
+		left join CLARITY_EAP eap on op.PROC_ID = eap.PROC_ID
+		left join PAT_ENC enc on op.PAT_ENC_CSN_ID = enc.PAT_ENC_CSN_ID
+		left join ZC_ORDER_TYPE zot on op.ORDER_TYPE_C = zot.ORDER_TYPE_C
+		left join ZC_ORDER_CLASS zoc on op.ORDER_CLASS_C = zoc.ORDER_CLASS_C
+		left join ZC_ORDER_STATUS zos on op.ORDER_STATUS_C = zos.ORDER_STATUS_C
+		left join ZC_REASON_FOR_CANC zfc on op.REASON_FOR_CANC_C = zfc.REASON_FOR_CANC_C
+
+
+
+		where 1=1
+		and op.order_type_c = 17 --in (16,17) -- 16=OT 17 = PT
+		and op.FUTURE_OR_STAND is null
+		--and op.ORDER_STATUS_C not in (4,9) -- 4=CXL, 9=Discontinued
+		and op.ORDER_INST between @StartDate and @EndDate
+		and enc.SERV_AREA_ID = 10
+
+		--order by op.ORDERING_DATE
+		--, pat.PAT_MRN_ID
+
+)z
+
+group by  ORDERING_DATE
+, PROC_NAME
+
+order by Order_Date
+, PROC_NAME
+
