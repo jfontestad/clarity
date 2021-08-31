@@ -1,0 +1,43 @@
+/*
+********************************************************************************
+TITLE:   [Completed Appointments for Quick Care and Primary Care]
+*/
+
+
+declare @StartDate as date
+declare @EndDate as date
+;
+
+set @STARTDATE = EPIC_UTIL.EFN_DIN('{?StartDate}')  --Epic Function for Crystal Report Relative Date Parameters
+set @ENDDATE = EPIC_UTIL.EFN_DIN('{?EndDate}')
+
+
+select vsa.DEPARTMENT_NAME
+, vsa.CONTACT_DATE
+
+, sum(case when vsa.appt_status_c = 6 then 1 else 0 end) as ARRIVED_APPT_COUNT
+, sum(case when vsa.appt_status_c = 2 then 1 else 0 end) as COMPLETED
+
+
+
+from v_sched_appt vsa
+left join PATIENT pat on pat.PAT_ID = vsa.PAT_ID
+where 1=1
+and vsa.SERV_AREA_ID = 10
+and vsa.DEPT_SPECIALTY_C in (125,138)  --Pull only QC and PC locations
+and vsa.APPT_STATUS_C in (2,6) -- 1=Scheduled, 2=Completed, 6=Arrived, 3 = Cancelled, 4 = No Show, 5 = Left without seen
+and vsa.CONTACT_DATE >= @StartDate and vsa.CONTACT_DATE <= @EndDate  -- Appointment Date
+
+group by vsa.DEPARTMENT_NAME
+--, vsa.DEPT_SPECIALTY_NAME
+, vsa.CONTACT_DATE
+--, vsa.PAT_ID
+--, vsa.APPT_STATUS_C
+--, vsa.APPT_STATUS_NAME
+--, vsa.DEPARTMENT_ID
+
+order by vsa.DEPARTMENT_NAME
+, CONTACT_DATE
+--, APPT_STATUS_NAME
+
+
