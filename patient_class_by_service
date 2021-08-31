@@ -1,0 +1,7 @@
+
+select 
+patclass, hospitalServiceDesc, 
+--count(*) 
+from 
+
+[UMCSN].[vw_UMC_IPLOS] group by patclass, hospitalServiceDesc order by patclass, hospitalServiceDesc
