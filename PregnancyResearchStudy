@@ -1,0 +1,57 @@
+/******************************
+** Pregnancy Research Study
+** File: Pregnancy Data - Research Request.sql
+** Desc: Pregnancy episodes with encounters during date range
+**************************
+** Change History
+**************************
+** PR     Date       Author    Description	
+** --    ------	   -------   ------------------------------------
+
+*******************************/
+
+DECLARE @STARTDATE DATE = EPIC_UTIL.EFN_DIN('4/15/2020') 
+DECLARE @ENDDATE DATE = EPIC_UTIL.EFN_DIN('10/15/2020')
+DECLARE @SERVAREAID VARCHAR(30) = '10';
+
+
+SELECT DISTINCT
+e.EPISODE_ID
+,ISNULL(CONVERT(varchar,del.DEL_DTTM,120),'')	'Delivery_Date'
+,ISNULL(del.GA,'')				'GA'
+,vob.EPIS_GRAVIDA_COUNT			'Gravida'
+,vob.EPIS_PARA_COUNT			'Para'
+,FLOOR(DATEDIFF(DAY, p.BIRTH_DATE, COALESCE(del.DEL_DTTM,e.START_DATE)) / 365.25)					'Patient_Age'
+,ISNULL(race_table.NAME,'*Unspecified')	'Patient_Race'
+--,pe.CONTACT_DATE
+--,dep.DEPARTMENT_ID
+--,dep.DEPARTMENT_NAME
+
+FROM
+PAT_ENC pe
+JOIN PATIENT p ON pe.PAT_ID = p.PAT_ID
+JOIN VALID_PATIENT vp ON pe.PAT_ID = vp.PAT_ID AND vp.IS_VALID_PAT_YN = 'Y'
+LEFT JOIN PAT_ENC_HSP peh ON pe.PAT_ENC_CSN_ID = peh.PAT_ENC_CSN_ID
+LEFT JOIN CLARITY_DEP dep ON COALESCE(pe.DEPARTMENT_ID,peh.DEPARTMENT_ID) = dep.DEPARTMENT_ID
+JOIN EPISODE_LINK el ON pe.PAT_ENC_CSN_ID = el.PAT_ENC_CSN_ID
+JOIN EPISODE e ON el.EPISODE_ID = e.EPISODE_ID
+	AND e.SUM_BLK_TYPE_ID = 2 
+LEFT JOIN V_OB_HX_EPISODE_COUNTS vob ON e.EPISODE_ID = vob.EPISODE_ID
+LEFT JOIN V_OB_DEL_RECORDS del ON e.EPISODE_ID = del.PREG_EPISODE_ID
+
+LEFT JOIN ------------------Pull in first race listed only
+	(SELECT
+	pr.PAT_ID
+	,zrace.NAME
+	FROM 
+	PATIENT_RACE pr
+	LEFT JOIN ZC_PATIENT_RACE zrace ON pr.PATIENT_RACE_C = zrace.PATIENT_RACE_C
+	WHERE
+	pr.LINE = 1
+		) race_table
+		ON	p.PAT_ID = race_table.PAT_ID
+
+WHERE 1=1
+AND dep.DEPARTMENT_ID in ('100000121','100000122','100000125')	--OB Departments
+AND CONVERT(date,pe.CONTACT_DATE) BETWEEN @STARTDATE AND @ENDDATE
+AND pe.SERV_AREA_ID = 10
