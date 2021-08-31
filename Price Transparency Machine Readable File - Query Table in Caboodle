@@ -1,0 +1,23 @@
+
+USE CDW
+DECLARE @CPTCODE VARCHAR(5)
+DECLARE @STARTDATE INT
+DECLARE @ENDDATE INT
+DECLARE @HAR VARCHAR(20)
+SET @HAR = '18006793448' --USE % FOR ALL HARS
+SET @CPTCODE = '%' --USE % FOR ALL CPTCODES
+SET @STARTDATE = 20210101
+SET @ENDDATE = 20210201
+
+SELECT PD.CptCode, PD.Code, PD.PatientFriendlyName, PD.Type
+, F.PostDateKey, F.ServiceDateKey, H.PrimaryProfessionalAccountEpicId, H.HospitalAccountEpicId
+, f.TransactionType, F.Amount, F.ChargeAmount, F.PaymentAmount
+, F.DebitAdjustmentAmount, F.CreditAdjustmentAmount, F.BillStatus
+, F.SelfPayStatus, F.CodingStatus, F.* --There are many columns to choose from
+FROM dbo.BillingTransactionFact F with(nolock)
+LEFT JOIN BillingProcedureDim PD ON F.BillingProcedureKey = PD.BillingProcedureKey
+LEFT JOIN HospitalAdmissionFact H ON F.EncounterKey = H.EncounterKey
+WHERE F.TransactionType = 'Charge' --Limitting to Charge -- Available Transaction Types are: Charge, Credit Adjustment, System Adjustment, Debit Adjustment, *Unspecified, Payment, *Delete, *Not Applicable
+AND F.ServiceDateKey BETWEEN @STARTDATE AND @ENDDATE
+AND PD.CptCode LIKE @CPTCODE
+AND H.HospitalAccountEpicId LIKE @HAR
