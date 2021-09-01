@@ -1,0 +1,23 @@
+ select distinct 
+ * 
+ from (
+ select 
+ emp.NAME
+ ,OR_LOG.REC_CREATE_USER_ID
+ ,LOG_NAME
+ ,OR_LOG.SURGERY_DATE
+ ,ROW_NUMBER () OVER (PARTITION BY emp.user_id ORDER BY surgery_date desc) row_num
+--, *
+ FROM   Clarity.dbo.OR_LOG OR_LOG 
+ JOIN clarity.dbo.clarity_emp emp on OR_LOG.rec_create_user_id = emp.USER_ID
+ ) a
+ where row_num = 1
+ and SURGERY_DATE >= '1/1/2021'
+ order by  name
+
+-- INNER JOIN Clarity.dbo.OR_LOG_ALL_SURG OR_LOG_ALL_SURG ON OR_LOG.LOG_ID=OR_LOG_ALL_SURG.LOG_ID 
+-- INNER JOIN Clarity.dbo.OR_LOG_ALL_PROC OR_LOG_ALL_PROC ON OR_LOG.LOG_ID=OR_LOG_ALL_PROC.LOG_ID 
+-- LEFT OUTER JOIN Clarity.dbo.ZC_OR_SERVICE ZC_OR_SERVICE ON OR_LOG.SERVICE_C=ZC_OR_SERVICE.SERVICE_C 
+-- LEFT OUTER JOIN Clarity.dbo.ZC_PAT_CLASS ZC_PAT_CLASS ON OR_LOG.PAT_TYPE_C=ZC_PAT_CLASS.ADT_PAT_CLASS_C 
+ --LEFT OUTER JOIN Clarity.dbo.CLARITY_SER CLARITY_SER ON OR_LOG_ALL_SURG.SURG_ID=CLARITY_SER.PROV_ID
+
